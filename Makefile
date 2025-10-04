@@ -1,6 +1,9 @@
+# Makefile
+
 CC = gcc
 LDFLAGS = -lpcap
-SRC = 
+
+SRC = main.c
 OBJ = $(SRC:.c=.o)
 TARGET = cshark
 
