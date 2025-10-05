@@ -1,3 +1,4 @@
+#include "route.h"
 #include "main.h"
 
 #include <signal.h>
@@ -87,7 +88,7 @@ int main()
         printf("You selected interface: %s %s\n\n\n", selected_device->name, selected_device->description ? selected_device->description : "");
         
         // Working with the selected device
-        printf("Selected device: %s\n", selected_device->name);
+        work_with_device(selected_device);
 
         // When returning from work_with_device (user selected "Go Back"), redisplay the interfaces
         printf("\n");

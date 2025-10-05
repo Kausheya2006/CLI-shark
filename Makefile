@@ -3,7 +3,7 @@
 CC = gcc
 LDFLAGS = -lpcap
 
-SRC = main.c
+SRC = main.c route.c
 OBJ = $(SRC:.c=.o)
 TARGET = cshark
 
