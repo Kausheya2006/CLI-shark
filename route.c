@@ -1,3 +1,4 @@
+#include "sniff.h"
 #include "main.h"
 
 #include "storage.h"
@@ -77,7 +78,7 @@ void work_with_device(pcap_if_t *device)
         }
 
         printf("Starting to sniff packets with filter '%s' on interface: %s\n", filter_exp, device->name);
-        printf("Sniffing not implemented yet.\n");
+        sniff_packets(device, filter_exp);
         // After sniffing, the loop will repeat, showing the menu again.
     }
     else if (choice == 3)
