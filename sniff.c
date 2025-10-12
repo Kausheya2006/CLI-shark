@@ -1,8 +1,7 @@
-#include "storage.h"
 #include "main.h"
 #include "sniff.h"
-
-
+#include "utils.h"
+#include "storage.h"
 #include <sys/select.h>
 #include <unistd.h>
 #include <termios.h>
@@ -27,10 +26,90 @@ void signal_handler(int signum)
     }
 }
 
-void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet) {
-    (void)args;
-    printf("Captured a packet of length %d
-", header->len);
+void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+{
+    // pcap_pkthdr -> {ts, caplen, len}  // ts = timestamp, caplen = length of portion present, len = length of the original packet
+    //                ts -> {tv_sec, tv_usec}  // tv_sec = seconds, tv_usec = microseconds
+    // packet -> actual packet data
+    // args -> user argument passed to pcap_loop (here, it's NULL)
+
+    const u_char* current_pos = packet;  // This tracks the current position in packet (it will help in finding the payload starting position)
+
+    printf("--------------------------------------------------------------------------------------\n");
+    printf("| Packet ID: %d  | ", packet_id);
+    printf("Timestamp: %ld.%06d seconds  | ", header->ts.tv_sec, header->ts.tv_usec);
+    printf("Captured Length: %d bytes  |\n", header->caplen);
+
+    printf("--------------------------------------------------------------------------------------\n\n");
+
+    //// Layer 2 : Ethernet Header ////
+    printf("------ L2 : Ethernet Header ------\n");
+    print_mac_address(packet);    // source mac, dest mac
+    u_short ethertype = print_ethertype(packet);  // ethertype
+
+    current_pos += 14;  // Move current position by 14 bytes (Ethernet header size)
+    printf("\n");
+
+    //// Layer 3 : IP Header ////
+    printf("------ L3 : %s Header ------\n", decode_ethertype(ethertype));
+    u_char transport_protocol = print_ether_details(&current_pos, ethertype, packet_id);  
+
+    printf("\n");
+
+
+    if (transport_protocol == 0) 
+    {
+        printf("-------------------------------------------------\n\n\n");
+        packet_id++;
+        return;
+    }
+
+    //// Layer 4 : Transport Layer Header ////
+    printf("------ L4 : %s Header ------\n", decode_protocol(transport_protocol, ethertype));
+    int application_protocol = print_L4_details(&current_pos, packet, ethertype, transport_protocol);
+    printf("\n");
+
+    //// Layer 7 : Application Layer ////
+
+    const u_char *payload = current_pos;  // Start of the payload data
+    int total_header_len = (current_pos - packet);  // Total length of all headers so far
+    int payload_len = header->caplen - total_header_len;  // Length of the payload data, (caplen : captured length of packet)
+
+    if (application_protocol == 80 || application_protocol == 443 || application_protocol == 53)  // HTTP / HTTPS / DNS
+    {
+        printf("------ L7 : Identified as [%s] Protocol on port %d  | Payload size : %d | ------\n", 
+               decode_application_protocol(application_protocol, application_protocol), application_protocol, payload_len);
+        printf("\n");
+
+        if (payload_len > 0)
+        {
+            payload_dump(payload, payload_len);
+            printf("\n");
+        }
+        else
+        {
+            printf("No Payload Data.\n\n");
+        }
+    }
+    else if (application_protocol > 0)  // Valid port but not a known protocol
+    {
+        printf("------ L7 : Unidentified Application Protocol on non-standard port %d  | Payload size : %d | ------\n", application_protocol, payload_len);
+        printf("No further details for this Application Protocol.\n\n");
+    }
+    else  // Port 0 means not TCP/UDP or error
+    {
+        printf("------ L7 : No transport layer or unsupported protocol | Payload size : %d | ------\n", payload_len);
+        printf("No further details available.\n\n");
+    }
+
+    // Store the packet in session storage
+    store_packet(header, packet);
+
+    packet_id++;
+    printf("--------------------------------------------------------------------------------------\n\n");
+    printf("\n\n");
+
+
 }
 
 void sniff_packets(pcap_if_t *device, const char *filter_exp)
