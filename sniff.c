@@ -1,3 +1,4 @@
+#include "storage.h"
 #include "main.h"
 #include "sniff.h"
 
@@ -35,7 +36,7 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
 void sniff_packets(pcap_if_t *device, const char *filter_exp)
 {
        
-    // clear_last_session(); // Clear packets from previous session to avoid memory leaks
+    clear_last_session(); // Clear packets from previous session to avoid memory leaks
     packet_id = 1; // Reset packet ID for new session
 
     char errbuf[PCAP_ERRBUF_SIZE];
