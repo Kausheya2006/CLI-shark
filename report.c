@@ -2,7 +2,7 @@
 #include "storage.h"
 #include "main.h"
 #include "utils.h"
-
+#include "report_utils.h"
 
 ///////// LLM GENERATED CODE /////////
 void get_summary(stored_packet_t *stored_packet, int i)
@@ -95,36 +95,36 @@ void generate_report(stored_packet_t *stored_packet, int packet_id) {
     int transport_header_len = 0;
 
     if (ethertype == ETHERTYPE_IP) { // IPv4
-        
+        generate_ipv4_report(packet + total_header_len, &ip_header_len, &transport_protocol);
         total_header_len += ip_header_len;
 
         if (transport_protocol == IPPROTO_TCP) {
-            transport_header_len = 0;
+            transport_header_len = generate_tcp_report(packet + total_header_len);
         } else if (transport_protocol == IPPROTO_UDP) {
-            transport_header_len = 0;
+            transport_header_len = generate_udp_report(packet + total_header_len);
         }
         total_header_len += transport_header_len;
     
     } else if (ethertype == ETHERTYPE_IPV6) { // IPv6
         ip_header_len = 40; // Fixed size for base IPv6 header
-        
+        generate_ipv6_report(packet + total_header_len, &transport_protocol);
         total_header_len += ip_header_len;
         
         if (transport_protocol == IPPROTO_TCP) {
-            transport_header_len = 0;
+            transport_header_len = generate_tcp_report(packet + total_header_len);
         } else if (transport_protocol == IPPROTO_UDP) {
-            transport_header_len = 0;
+            transport_header_len = generate_udp_report(packet + total_header_len);
         }
         total_header_len += transport_header_len;
 
     } else if (ethertype == ETHERTYPE_ARP) { // ARP
-        
+        generate_arp_report(packet + total_header_len);
         total_header_len = header->caplen;
     }
 
     // --- Payload ---
     printf("\n--- Full Packet Data (Headers in Blue) ---\n");
-    // print_hex_dump(packet, header->caplen, total_header_len);
+    print_hex_dump(packet, header->caplen, total_header_len);
     
     printf("\n============================= End of Analysis =============================\n\n");
     
