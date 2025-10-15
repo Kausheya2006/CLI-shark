@@ -1,3 +1,4 @@
+#include "report.h"
 #include "sniff.h"
 #include "main.h"
 
