@@ -20,6 +20,10 @@ CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live ne
 
 - Interactive CLI menu flow
 
+- Export captured packets in pcap format
+
+- View saved pcap files within the CLI interface
+
 ## Project Structure
 
 ```
@@ -84,7 +88,9 @@ See [LICENSE](LICENSE).
     host 10.0.0.5
     tcp and src host 192.168.1.10 and dst port 80
     ```
+
 2. Press `ctrl+d` anywhere to terminate the program.
+
 3. Pressing `ctrl+c` anywhere wont terminate the program, rather :
     - stop packet capturing (if pressed during packet capture)
     - go to main menu (if pressed during packet capture or inspection)
@@ -108,5 +114,3 @@ See [LICENSE](LICENSE).
 ## Issues
 
 - If you press `ctrl+c` during inspect last session while providing input, it wont take you to main menu. You need to press `0` to return to main menu.
-
-- I am not using persistant storage to save captured packets. I am storing them in an array.
