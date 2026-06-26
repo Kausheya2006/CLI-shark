@@ -1,6 +1,5 @@
-#include "route.h"
 #include "main.h"
-
+#include "route.h"
 #include <signal.h>
 
 // Signal handler to ignore Ctrl+C in main menu

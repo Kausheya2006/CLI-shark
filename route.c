@@ -1,9 +1,7 @@
-#include "report.h"
-#include "sniff.h"
 #include "main.h"
-
+#include "sniff.h"
 #include "storage.h"
-
+#include "report.h"
 #include <signal.h>
 
 // Signal handler to ignore Ctrl+C in menu
