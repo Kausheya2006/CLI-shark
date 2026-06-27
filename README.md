@@ -1,4 +1,14 @@
 # CLI-Shark
+CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live network traffic across common Layer 2-7 protocols, with optional AI insights.
+
+## Features
+- Live packet capture with optional BPF filters
+- Detailed per-packet analysis (Ethernet, IPv4/IPv6, ARP, TCP/UDP/ICMP)
+- Hex + ASCII payload dump with header highlighting
+- Protocol-specific summaries (HTTP/HTTPS/DNS)
+- AI insights for traffic behavior based on headers and payload
+- Interactive CLI menu flow
+
 
 ## Run Instruction
 ```sh

@@ -24,5 +24,6 @@ void generate_arp_report(const u_char *);
 
 void generate_ipv6_report(const u_char *, int *);
 
+void askLLM(stored_packet_t*, int, int);
 
 #endif 

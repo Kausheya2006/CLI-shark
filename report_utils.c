@@ -2,6 +2,8 @@
 #include "storage.h"
 #include "utils.h"
 #include <ctype.h>
+#include "report.h"
+#include "llm.h"
 
 #define ANSI_COLOR_BLUE   "\x1b[34m"
 #define ANSI_COLOR_RESET  "\x1b[0m"
@@ -154,4 +156,67 @@ void generate_ipv6_report(const u_char *packet, int *next_protocol) {
     printf("  Hop Limit:        %u\n", ip6_header->ip6_hlim);
     printf("  Source IP:        %s\n", src_ip_buf);
     printf("  Destination IP:   %s\n", dst_ip_buf);
+}
+
+void askLLM(stored_packet_t *packet, int packet_id, int total_header_len){
+
+    FILE *tmp = tmpfile();
+    if (!tmp) return;
+
+    int og_stdout = dup(fileno(stdout));
+
+    // redirect stdout to tmp file
+    dup2(fileno(tmp), fileno(stdout));
+    generate_report(packet, packet_id); 
+    fflush(stdout);
+    dup2(og_stdout, fileno(stdout));
+    close(og_stdout);
+
+    fseek(tmp, 0, SEEK_SET); // beginning
+
+    char line[256];
+    char header_content[4096] = {0};
+
+    // everything before full packet data
+    while (fgets(line, sizeof(line), tmp))
+    {
+        if (strstr(line, "========================= In-Depth Packet Analysis ========================"))
+            continue;
+
+        if (strstr(line, "--- Full Packet Data (Headers in Blue) ---"))
+            break;
+        
+        strncat(header_content, line, sizeof(header_content) - strlen(header_content) - 1);
+    }
+    fclose(tmp);
+
+    int caplen = packet->header.caplen;
+    
+    char *llmprompt = calloc(1, strlen(header_content) + caplen + 512);
+    if (!llmprompt)     return;
+
+    snprintf(llmprompt, strlen(header_content) + 512, 
+    "You are an expert network analyst. Look at these headers and the extracted ASCII payload. What is this traffic doing? Keep it under 3 sentences.\n\n"
+    "HEADERS:\n%s\n"
+    "ASCII PAYLOAD:\n", header_content);
+
+
+    // concatenate body
+    int curr_idx = strlen(llmprompt);
+    const u_char *packet_data = packet->data;
+
+    for (int i=total_header_len; i < caplen; i++)
+    {
+        if (isprint(packet_data[i]))   
+            llmprompt[curr_idx++] = packet_data[i];
+        else
+            llmprompt[curr_idx++] = '.';
+    }
+    llmprompt[curr_idx] = '\0';
+
+    //printf("\n\n Prompt : %s\n\n", llmprompt);
+
+    send_to_llm_api(llmprompt);
+    //printf("%s", llmprompt);
+    free(llmprompt);
 }

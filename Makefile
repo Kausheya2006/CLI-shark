@@ -1,9 +1,9 @@
 # Makefile
 
 CC = gcc
-LDFLAGS = -lpcap
+LDFLAGS = -lpcap -lcurl
 
-SRC = main.c report_utils.c report.c route.c sniff.c storage.c utils.c
+SRC = main.c report_utils.c report.c route.c sniff.c storage.c utils.c llm.c
 OBJ = $(SRC:.c=.o)
 TARGET = cshark
 

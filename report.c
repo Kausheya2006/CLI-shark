@@ -65,10 +65,9 @@ void get_summary(stored_packet_t *stored_packet, int i)
            src_port_buf,
            dest_port_buf);
 }
-///////// END OF LLM GENERATED CODE /////////
 
+int generate_report(stored_packet_t *stored_packet, int packet_id) {
 
-void generate_report(stored_packet_t *stored_packet, int packet_id) {
     const u_char *packet = stored_packet->data;
     const struct pcap_pkthdr *header = &stored_packet->header;
     int total_header_len = 0;
@@ -125,7 +124,6 @@ void generate_report(stored_packet_t *stored_packet, int packet_id) {
     // --- Payload ---
     printf("\n--- Full Packet Data (Headers in Blue) ---\n");
     print_hex_dump(packet, header->caplen, total_header_len);
-    
-    printf("\n============================= End of Analysis =============================\n\n");
-    
+
+    return total_header_len;
 }

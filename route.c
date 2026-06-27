@@ -3,6 +3,7 @@
 #include "storage.h"
 #include "report.h"
 #include <signal.h>
+#include "report_utils.h"
 
 // Signal handler to ignore Ctrl+C in menu
 void ignore_sigint_menu(int signum)
@@ -147,8 +148,15 @@ void work_with_device(pcap_if_t *device)
                 stored_packet_t* selected_packet = get_stored_packet(choice2 - 1);
                 if (selected_packet != NULL)
                 {
-                    generate_report(selected_packet, choice2);
+                    int total_header_len = generate_report(selected_packet, choice2);
                     printf("\n");  // Add spacing after report
+
+                    char key;
+                    printf("Ask AI for insights? (Press ? then ENTER)  ");
+                    scanf(" %c", &key);
+                    if (key == '?')
+                    askLLM(selected_packet, choice2, total_header_len);
+                    printf("\n============================= End of Analysis =============================\n\n");
                 }
             }
             else
