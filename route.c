@@ -4,6 +4,7 @@
 #include "report.h"
 #include <signal.h>
 #include "report_utils.h"
+#include "sniper.h"
 
 // Signal handler to ignore Ctrl+C in menu
 void ignore_sigint_menu(int signum)
@@ -152,10 +153,47 @@ void work_with_device(pcap_if_t *device)
                     printf("\n");  // Add spacing after report
 
                     char key;
-                    printf("Ask AI for insights? (Press ? then ENTER)  ");
-                    scanf(" %c", &key);
-                    if (key == '?')
-                    askLLM(selected_packet, choice2, total_header_len);
+                    printf("\n[CLI-SHARK] Actions: [?] AI Insight | [Any] Skip: ");
+                    scanf(" %c", &key); 
+
+                    if (key == '?') {
+                        askLLM(selected_packet, choice2, total_header_len);
+                    } 
+
+                    printf("\n[CLI-SHARK] Actions: [K] Kill Connection | [Any] Skip: ");
+                    scanf(" %c", &key); 
+
+                    if (key == 'K' || key == 'k') {
+                        // Ensure this is actually a TCP packet before trying to kill it!
+                        struct ip *iph = (struct ip *)(selected_packet->data + 14); // Assuming standard 14-byte Ethernet header
+                        if (iph->ip_p == IPPROTO_TCP) {
+                            
+                            struct tcphdr *tcph = (struct tcphdr *)(selected_packet->data + 14 + (iph->ip_hl * 4));
+                            
+                            uint32_t src_ip = iph->ip_src.s_addr;
+                            uint32_t dst_ip = iph->ip_dst.s_addr;
+                            uint16_t src_port = ntohs(tcph->th_sport);
+                            uint16_t dst_port = ntohs(tcph->th_dport);
+                            
+                            // To kill it, we use the current sequence and acknowledgment numbers
+                            uint32_t current_seq = ntohl(tcph->th_seq);
+                            uint32_t current_ack = ntohl(tcph->th_ack);
+
+                            printf("\n[CLI-SHARK] Charging RST Sniper...\n");
+                            
+                            // Bullet 1: Hit the Destination (Pretending to be Source)
+                            // We use the 'current_seq' because the destination is expecting that sequence number next.
+                            fire_rst_packet(src_ip, dst_ip, src_port, dst_port, current_seq);
+                            
+                            // Bullet 2: Hit the Source (Pretending to be Destination)
+                            // We swap the IPs/Ports, and use the 'current_ack' because the source is expecting that next.
+                            fire_rst_packet(dst_ip, src_ip, dst_port, src_port, current_ack);
+                            
+                            printf("[CLI-SHARK] Target connection neutralized.\n");
+                        } else {
+                            printf("[CLI-SHARK] Error: Sniper only works on TCP connections.\n");
+                        }
+                    }
                     printf("\n============================= End of Analysis =============================\n\n");
                 }
             }
