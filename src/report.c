@@ -72,21 +72,21 @@ int generate_report(stored_packet_t *stored_packet, int packet_id) {
     const struct pcap_pkthdr *header = &stored_packet->header;
     int total_header_len = 0;
 
-    printf("\n\n========================= In-Depth Packet Analysis ========================\n");
-    printf("Packet ID: %d\n", packet_id);
-    printf("Timestamp: %ld.%06ld\n", header->ts.tv_sec, (long)header->ts.tv_usec);
-    printf("Captured Length: %d bytes | Original Length: %d bytes\n", header->caplen, header->len);
-    printf("--------------------------------------------------------------------------\n");
+    printf("\n\n%s========================= In-Depth Packet Analysis ========================%s\n", C_TITLE, C_RESET);
+    printf("%sPacket ID:%s %d\n", C_LABEL, C_RESET, packet_id);
+    printf("%sTimestamp:%s %ld.%06ld\n", C_LABEL, C_RESET, header->ts.tv_sec, (long)header->ts.tv_usec);
+    printf("%sCaptured Length:%s %d bytes | %sOriginal Length:%s %d bytes\n", C_LABEL, C_RESET, header->caplen, C_LABEL, C_RESET, header->len);
+    printf("%s--------------------------------------------------------------------------%s\n", C_DIM, C_RESET);
 
     // --- Layer 2: Ethernet Frame ---
     const struct ether_header *eth_header = (struct ether_header *)packet;
     total_header_len = sizeof(struct ether_header);
 
-    printf("\n--- Layer 2: Ethernet Frame ---\n");
-    printf("  Destination MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", eth_header->ether_dhost[0], eth_header->ether_dhost[1], eth_header->ether_dhost[2], eth_header->ether_dhost[3], eth_header->ether_dhost[4], eth_header->ether_dhost[5]);
-    printf("  Source MAC:      %02x:%02x:%02x:%02x:%02x:%02x\n", eth_header->ether_shost[0], eth_header->ether_shost[1], eth_header->ether_shost[2], eth_header->ether_shost[3], eth_header->ether_shost[4], eth_header->ether_shost[5]);
+    printf("\n%s--- Layer 2: Ethernet Frame ---%s\n", C_SECTION, C_RESET);
+    printf("  %sDestination MAC:%s %02x:%02x:%02x:%02x:%02x:%02x\n", C_LABEL, C_RESET, eth_header->ether_dhost[0], eth_header->ether_dhost[1], eth_header->ether_dhost[2], eth_header->ether_dhost[3], eth_header->ether_dhost[4], eth_header->ether_dhost[5]);
+    printf("  %sSource MAC:%s      %02x:%02x:%02x:%02x:%02x:%02x\n", C_LABEL, C_RESET, eth_header->ether_shost[0], eth_header->ether_shost[1], eth_header->ether_shost[2], eth_header->ether_shost[3], eth_header->ether_shost[4], eth_header->ether_shost[5]);
     u_short ethertype = ntohs(eth_header->ether_type);
-    printf("  EtherType:       0x%04x (%s)\n", ethertype, decode_ethertype(ethertype));
+    printf("  %sEtherType:%s       0x%04x (%s)\n", C_LABEL, C_RESET, ethertype, decode_ethertype(ethertype));
 
     // --- Layer 3 & 4 Dissection ---
     int ip_header_len = 0;
@@ -122,7 +122,7 @@ int generate_report(stored_packet_t *stored_packet, int packet_id) {
     }
 
     // --- Payload ---
-    printf("\n--- Full Packet Data (Headers in Blue) ---\n");
+    printf("\n%s--- Full Packet Data (Headers in Blue) ---%s\n", C_SECTION, C_RESET);
     print_hex_dump(packet, header->caplen, total_header_len);
 
     return total_header_len;

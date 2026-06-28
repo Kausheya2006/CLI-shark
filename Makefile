@@ -2,8 +2,9 @@
 
 CC = gcc
 LDFLAGS = -lpcap -lcurl
+CPPFLAGS = -Iinclude
 
-SRC = main.c report_utils.c report.c route.c sniff.c storage.c utils.c llm.c sniper.c
+SRC = src/main.c src/report_utils.c src/report.c src/route.c src/sniff.c src/storage.c src/utils.c src/llm.c src/sniper.c
 OBJ = $(SRC:.c=.o)
 TARGET = cshark
 

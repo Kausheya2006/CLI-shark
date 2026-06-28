@@ -1,5 +1,5 @@
 #include<strings.h>
-#include "main.h"
+#include "utils.h"
 /*
 This contains all print utilities (like printing mac add, ip add, ...)
 */
@@ -88,20 +88,24 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
         *packet_ptr += (ip_header[0] & 0x0F) * 4;  // Move current position by IHL bytes (Internet Header Length) (first 4 bits of first byte)
         
 
-        printf("Source IP : %d.%d.%d.%d  | ", ip_header[12], ip_header[13], ip_header[14], ip_header[15]);
-        printf("Destination IP : %d.%d.%d.%d  | ", ip_header[16], ip_header[17], ip_header[18], ip_header[19]);
+        printf("%sSource IP%s : %d.%d.%d.%d  | ", C_LABEL, C_RESET, ip_header[12], ip_header[13], ip_header[14], ip_header[15]);
+        printf("%sDestination IP%s : %d.%d.%d.%d  | ", C_LABEL, C_RESET, ip_header[16], ip_header[17], ip_header[18], ip_header[19]);
 
 
         u_char protocol = ip_header[9];
 
         const char* decoded_type = decode_protocol(protocol, ethertype);
-        printf("Protocol : %s (%d)  | ", decoded_type, protocol); // TCP / UDP / ICMP / ...
+        printf("%sProtocol%s : %s (%d)  | ", C_LABEL, C_RESET, decoded_type, protocol); // TCP / UDP / ICMP / ...
 
 
-        printf("TTL : %d  | Packet ID : %d  | Total Length : %d | Header Length : %d  |\n", ip_header[8], packet_id, ntohs(*(u_short*)(ip_header + 2)), (ip_header[0] & 0x0F) * 4);
+         printf("%sTTL%s : %d  | %sPacket ID%s : %d  | %sTotal Length%s : %d | %sHeader Length%s : %d  |\n",
+             C_LABEL, C_RESET, ip_header[8],
+             C_LABEL, C_RESET, packet_id,
+             C_LABEL, C_RESET, ntohs(*(u_short*)(ip_header + 2)),
+             C_LABEL, C_RESET, (ip_header[0] & 0x0F) * 4);
         // ntoh : network to host byte order conversion (big-endian to little-endian)
         // (ip_header[0] & 0x0F) * 4 : masking first 4 bits to get IHL (Internet Header Length) and multiplying by 4 to get length in bytes
-        printf("Flags : ");
+        printf("%sFlags%s : ", C_LABEL, C_RESET);
         u_short flags_fragment = ntohs(*(u_short*)(ip_header + 6));
         u_short flags = (flags_fragment >> 13) & 0x07;
 
@@ -114,7 +118,7 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
         if (flags == 0)
             printf("None (0x00) ");
 
-        printf("  | Fragment Offset : %d\n", flags_fragment & 0x1FFF);  
+        printf("  | %sFragment Offset%s : %d\n", C_LABEL, C_RESET, flags_fragment & 0x1FFF);
         // masking first 3 bits to get flags and last 13 bits to get fragment offset    
 
         return protocol;
@@ -134,14 +138,14 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
 
         *packet_ptr += 40;  // IPv6 header fixed size = 40
 
-        printf("Source IP : ");
+        printf("%sSource IP%s : ", C_LABEL, C_RESET);
         for (int i=0; i<16; i++)
         {
             printf("%02X", ip_header[8 + i]);
             if (i % 2 != 0 && i != 15)
                 printf(":");
         }
-        printf("  | Destination IP : ");
+        printf("  | %sDestination IP%s : ", C_LABEL, C_RESET);
         for (int i=0; i<16; i++)
         {
             printf("%02X", ip_header[24 + i]);
@@ -152,9 +156,13 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
 
         u_char next_header = ip_header[6];
         const char* decoded_type = decode_protocol(next_header, ethertype);
-        printf("Next Header : %s (%d)  | ", decoded_type, next_header);
+        printf("%sNext Header%s : %s (%d)  | ", C_LABEL, C_RESET, decoded_type, next_header);
 
-        printf("Hop Limit : %d  | Traffic Class : %d  | Flow Label : %d  | Payload Length : %d |\n", ip_header[7], ((ip_header[0] & 0x0F) << 4) | (ip_header[1] >> 4), ((ip_header[1] & 0x0F) << 16) | (ip_header[2] << 8) | ip_header[3], ntohs(*(u_short*)(ip_header + 4)));
+         printf("%sHop Limit%s : %d  | %sTraffic Class%s : %d  | %sFlow Label%s : %d  | %sPayload Length%s : %d |\n",
+             C_LABEL, C_RESET, ip_header[7],
+             C_LABEL, C_RESET, ((ip_header[0] & 0x0F) << 4) | (ip_header[1] >> 4),
+             C_LABEL, C_RESET, ((ip_header[1] & 0x0F) << 16) | (ip_header[2] << 8) | ip_header[3],
+             C_LABEL, C_RESET, ntohs(*(u_short*)(ip_header + 4)));
 
         return next_header;
     }
@@ -174,7 +182,7 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
         const u_char *arp_header = *packet_ptr;  // Starting at packet[14] (after ethernet header)
 
         u_short opcode = ntohs(*(u_short*)(arp_header + 6));
-        printf("Operation : ");
+        printf("%sOperation%s : ", C_LABEL, C_RESET);
         if (opcode == 1)
             printf("Request (1)  | ");
         else if (opcode == 2)
@@ -182,28 +190,32 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
         else
             printf("Unknown (%d)  | ", opcode);
 
-        printf("Sender MAC : ");
+        printf("%sSender MAC%s : ", C_LABEL, C_RESET);
         for (int i=0; i<6; i++)
         {
             printf("%02X", arp_header[8 + i]);
             printf((i < 5) ? ":" : " |  ");
         }
-        printf("Sender IP : %d.%d.%d.%d  | ", arp_header[14], arp_header[15], arp_header[16], arp_header[17]);
+        printf("%sSender IP%s : %d.%d.%d.%d  | ", C_LABEL, C_RESET, arp_header[14], arp_header[15], arp_header[16], arp_header[17]);
 
-        printf("Target MAC : ");
+        printf("%sTarget MAC%s : ", C_LABEL, C_RESET);
         for (int i=0; i<6; i++)
         {
             printf("%02X", arp_header[18 + i]);
             printf((i < 5) ? ":" : " |  ");
         }
-        printf("Target IP : %d.%d.%d.%d |\n", arp_header[24], arp_header[25], arp_header[26], arp_header[27]);
+        printf("%sTarget IP%s : %d.%d.%d.%d |\n", C_LABEL, C_RESET, arp_header[24], arp_header[25], arp_header[26], arp_header[27]);
 
-        printf("Hardware Type : %d  | Protocol Type : 0x%04X  | Hardware Size : %d  | Protocol Size : %d |\n", ntohs(*(u_short*)(arp_header)), ntohs(*(u_short*)(arp_header + 2)), arp_header[4], arp_header[5]);
+         printf("%sHardware Type%s : %d  | %sProtocol Type%s : 0x%04X  | %sHardware Size%s : %d  | %sProtocol Size%s : %d |\n",
+             C_LABEL, C_RESET, ntohs(*(u_short*)(arp_header)),
+             C_LABEL, C_RESET, ntohs(*(u_short*)(arp_header + 2)),
+             C_LABEL, C_RESET, arp_header[4],
+             C_LABEL, C_RESET, arp_header[5]);
 
     }
     else
     {
-        printf("No further details for this Ethertype.\n");
+        printf("%sNo further details for this Ethertype.%s\n", C_DIM, C_RESET);
     }
 
    return 0;
@@ -212,13 +224,13 @@ u_char print_ether_details(const u_char **packet_ptr, u_short ethertype, int pac
 
 void print_mac_address(const u_char *mac)  // 0-5 byte : source mac, 6-11 byte : dest mac
 {
-    printf("Source MAC : ");
+    printf("%sSource MAC%s : ", C_LABEL, C_RESET);
     for (int i=0; i<6; i++)
     {
         printf("%02X", mac[i]);
         printf((i < 5) ? ":" : " |  ");
     }
-    printf("Destination MAC : ");
+    printf("%sDestination MAC%s : ", C_LABEL, C_RESET);
     for (int i=6; i<12; i++)
     {
         printf("%02X", mac[i]);
@@ -232,7 +244,7 @@ u_short print_ethertype(const u_char *packet)  // concatenate 12,13-th byte : et
     u_short ethertype = (packet[12] << 8 | packet[13]);  // combining two bytes to form ethertype (big-endian)
     
     const char* decoded_type = decode_ethertype(ethertype);
-    printf("Ethertype : %s (0x%04X)  |\n", decoded_type, ethertype);
+    printf("%sEthertype%s : %s (0x%04X)  |\n", C_LABEL, C_RESET, decoded_type, ethertype);
     return ethertype;
 }
 
@@ -261,8 +273,8 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         u_short src_port = ntohs(*(u_short*)(transport_header));
         u_short dst_port = ntohs(*(u_short*)(transport_header + 2));
         
-        printf("Source Port : %d  | ", src_port);
-        printf("Destination Port : %d  | ", dst_port);
+        printf("%sSource Port%s : %d  | ", C_LABEL, C_RESET, src_port);
+        printf("%sDestination Port%s : %d  | ", C_LABEL, C_RESET, dst_port);
 
         if (src_port == 80 || dst_port == 80)
             return_protocol_value = 80;
@@ -273,10 +285,10 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         else
             return_protocol_value = (dst_port >= 1024) ? dst_port : src_port;  // Return the higher port (likely ephemeral)
 
-        printf("Application Protocol : %s  | ", decode_application_protocol(src_port, dst_port));
+        printf("%sApplication Protocol%s : %s  | ", C_LABEL, C_RESET, decode_application_protocol(src_port, dst_port));
 
-        printf("Sequence Number : %u  | ", ntohl(*(u_int*)(transport_header + 4)));
-        printf("Acknowledgment Number : %u  | ", ntohl(*(u_int*)(transport_header + 8)));
+        printf("%sSequence Number%s : %u  | ", C_LABEL, C_RESET, ntohl(*(u_int*)(transport_header + 4)));
+        printf("%sAcknowledgment Number%s : %u  | ", C_LABEL, C_RESET, ntohl(*(u_int*)(transport_header + 8)));
 
         u_short data_offset_reserved_flags = ntohs(*(u_short*)(transport_header + 12));
         u_char data_offset = (data_offset_reserved_flags >> 12) & 0x0F;
@@ -287,7 +299,7 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         u_short flags = data_offset_reserved_flags & 0x01FF;  // last 9 bits
 
 
-        printf("Flags : ");
+        printf("%sFlags%s : ", C_LABEL, C_RESET);
         if (flags & 0x100)
             printf("NS ");
         if (flags & 0x080)
@@ -309,9 +321,9 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         if (flags == 0)
             printf("None ");
 
-        printf("Window Size : %d  | ", ntohs(*(u_short*)(transport_header + 14)));
-        printf("Checksum : 0x%04X  | ", ntohs(*(u_short*)(transport_header + 16)));
-        printf("Header Length : %d bytes |\n", transport_header_length);
+        printf("%sWindow Size%s : %d  | ", C_LABEL, C_RESET, ntohs(*(u_short*)(transport_header + 14)));
+        printf("%sChecksum%s : 0x%04X  | ", C_LABEL, C_RESET, ntohs(*(u_short*)(transport_header + 16)));
+        printf("%sHeader Length%s : %d bytes |\n", C_LABEL, C_RESET, transport_header_length);
 
     }
     else if (protocol == 17)  // UDP
@@ -326,8 +338,8 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         u_short src_port = ntohs(*(u_short*)(transport_header));
         u_short dst_port = ntohs(*(u_short*)(transport_header + 2));
         
-        printf("Source Port : %d  | ", src_port);
-        printf("Destination Port : %d  | ", dst_port);
+        printf("%sSource Port%s : %d  | ", C_LABEL, C_RESET, src_port);
+        printf("%sDestination Port%s : %d  | ", C_LABEL, C_RESET, dst_port);
         
         if (src_port == 80 || dst_port == 80)
             return_protocol_value = 80;
@@ -338,33 +350,33 @@ u_short print_L4_details(const u_char **packet_ptr, const u_char *packet, u_shor
         else
             return_protocol_value = (dst_port >= 1024) ? dst_port : src_port;  // Return the higher port (likely ephemeral)
         
-        printf("Application Protocol : %s  | ", decode_application_protocol(src_port, dst_port));
-        printf("Length : %d  | ", ntohs(*(u_short*)(transport_header + 4)));
-        printf("Checksum : 0x%04X |\n", ntohs(*(u_short*)(transport_header + 6)));
+        printf("%sApplication Protocol%s : %s  | ", C_LABEL, C_RESET, decode_application_protocol(src_port, dst_port));
+        printf("%sLength%s : %d  | ", C_LABEL, C_RESET, ntohs(*(u_short*)(transport_header + 4)));
+        printf("%sChecksum%s : 0x%04X |\n", C_LABEL, C_RESET, ntohs(*(u_short*)(transport_header + 6)));
 
         *packet_ptr += 8;  // UDP header size = 8 bytes
     }
     else
     {
-        printf("No further details for this Protocol.\n");
+        printf("%sNo further details for this Protocol.%s\n", C_DIM, C_RESET);
     }
     return return_protocol_value;
 }
    
 void payload_dump(const u_char *payload, int payload_len)
 {
-    printf("Payload Data : ");
+    printf("%sPayload Data%s : ", C_LABEL, C_RESET);
 
     int limit;
 
     if (payload_len < MAX_PAYLOAD_DUMP)
     {
-        printf("(%d bytes)\n\n", payload_len);
+        printf("%s(%d bytes)%s\n\n", C_DIM, payload_len, C_RESET);
         limit = payload_len;
     }
     else 
     {
-        printf("(First %d bytes out of %d bytes)\n\n", MAX_PAYLOAD_DUMP, payload_len);
+        printf("%s(First %d bytes out of %d bytes)%s\n\n", C_DIM, MAX_PAYLOAD_DUMP, payload_len, C_RESET);
         limit = MAX_PAYLOAD_DUMP;
     }
 
@@ -406,4 +418,30 @@ void payload_dump(const u_char *payload, int payload_len)
     }
     printf("\n");
 
+}
+
+size_t strip_ansi_codes(const char *input, char *output, size_t output_size)
+{
+    size_t out_idx = 0;
+
+    if (!input || !output || output_size == 0)
+        return 0;
+
+    for (size_t i = 0; input[i] != '\0' && out_idx + 1 < output_size; i++)
+    {
+        if (input[i] == '\x1b' && input[i + 1] == '[')
+        {
+            i += 2;
+            while (input[i] != '\0' && !(input[i] >= '@' && input[i] <= '~'))
+                i++;
+            if (input[i] == '\0')
+                break;
+            continue;
+        }
+
+        output[out_idx++] = input[i];
+    }
+
+    output[out_idx] = '\0';
+    return out_idx;
 }

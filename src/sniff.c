@@ -17,7 +17,7 @@ void signal_handler(int signum)
 {
     if (signum == SIGINT)
     {
-        printf("\n\nCtrl+C detected. Stopping packet capture and returning to menu...\n");
+        printf("\n\n%sCtrl+C detected.%s Stopping packet capture and returning to menu...\n", C_WARN, C_RESET);
         capture_interrupted = 1;
         if (g_pcap_handle != NULL)
         {
@@ -35,15 +35,16 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
 
     const u_char* current_pos = packet;  // This tracks the current position in packet (it will help in finding the payload starting position)
 
-    printf("--------------------------------------------------------------------------------------\n");
-    printf("| Packet ID: %d  | ", packet_id);
-    printf("Timestamp: %ld.%06d seconds  | ", header->ts.tv_sec, header->ts.tv_usec);
-    printf("Captured Length: %d bytes  |\n", header->caplen);
+    printf("\n%s============================== PACKET %d ==============================%s\n", C_ACCENT, packet_id, C_RESET);
+    printf("%s--------------------------------------------------------------------------------------%s\n", C_DIM, C_RESET);
+    printf("| %sPacket ID:%s %d  | ", C_LABEL, C_RESET, packet_id);
+    printf("%sTimestamp:%s %ld.%06d seconds  | ", C_LABEL, C_RESET, header->ts.tv_sec, header->ts.tv_usec);
+    printf("%sCaptured Length:%s %d bytes  |\n", C_LABEL, C_RESET, header->caplen);
 
-    printf("--------------------------------------------------------------------------------------\n\n");
+    printf("%s--------------------------------------------------------------------------------------%s\n\n", C_DIM, C_RESET);
 
     //// Layer 2 : Ethernet Header ////
-    printf("------ L2 : Ethernet Header ------\n");
+    printf("%s------ L2 : Ethernet Header ------%s\n", C_SECTION, C_RESET);
     print_mac_address(packet);    // source mac, dest mac
     u_short ethertype = print_ethertype(packet);  // ethertype
 
@@ -51,7 +52,7 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
     printf("\n");
 
     //// Layer 3 : IP Header ////
-    printf("------ L3 : %s Header ------\n", decode_ethertype(ethertype));
+    printf("%s------ L3 : %s Header ------%s\n", C_SECTION, decode_ethertype(ethertype), C_RESET);
     u_char transport_protocol = print_ether_details(&current_pos, ethertype, packet_id);  
 
     printf("\n");
@@ -59,13 +60,13 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
 
     if (transport_protocol == 0) 
     {
-        printf("-------------------------------------------------\n\n\n");
+        printf("%s-------------------------------------------------%s\n\n\n", C_DIM, C_RESET);
         packet_id++;
         return;
     }
 
     //// Layer 4 : Transport Layer Header ////
-    printf("------ L4 : %s Header ------\n", decode_protocol(transport_protocol, ethertype));
+    printf("%s------ L4 : %s Header ------%s\n", C_SECTION, decode_protocol(transport_protocol, ethertype), C_RESET);
     int application_protocol = print_L4_details(&current_pos, packet, ethertype, transport_protocol);
     printf("\n");
 
@@ -77,8 +78,8 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
 
     if (application_protocol == 80 || application_protocol == 443 || application_protocol == 53)  // HTTP / HTTPS / DNS
     {
-        printf("------ L7 : Identified as [%s] Protocol on port %d  | Payload size : %d | ------\n", 
-               decode_application_protocol(application_protocol, application_protocol), application_protocol, payload_len);
+         printf("%s------ L7 : Identified as [%s] Protocol on port %d  | Payload size : %d | ------%s\n", 
+             C_SECTION, decode_application_protocol(application_protocol, application_protocol), application_protocol, payload_len, C_RESET);
         printf("\n");
 
         if (payload_len > 0)
@@ -88,26 +89,26 @@ void my_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *p
         }
         else
         {
-            printf("No Payload Data.\n\n");
+            printf("%sNo Payload Data.%s\n\n", C_DIM, C_RESET);
         }
     }
     else if (application_protocol > 0)  // Valid port but not a known protocol
     {
-        printf("------ L7 : Unidentified Application Protocol on non-standard port %d  | Payload size : %d | ------\n", application_protocol, payload_len);
-        printf("No further details for this Application Protocol.\n\n");
+        printf("%s------ L7 : Unidentified Application Protocol on non-standard port %d  | Payload size : %d | ------%s\n", C_SECTION, application_protocol, payload_len, C_RESET);
+        printf("%sNo further details for this Application Protocol.%s\n\n", C_DIM, C_RESET);
     }
     else  // Port 0 means not TCP/UDP or error
     {
-        printf("------ L7 : No transport layer or unsupported protocol | Payload size : %d | ------\n", payload_len);
-        printf("No further details available.\n\n");
+        printf("%s------ L7 : No transport layer or unsupported protocol | Payload size : %d | ------%s\n", C_SECTION, payload_len, C_RESET);
+        printf("%sNo further details available.%s\n\n", C_DIM, C_RESET);
     }
 
     // Store the packet in session storage
     store_packet(header, packet);
 
     packet_id++;
-    printf("--------------------------------------------------------------------------------------\n\n");
-    printf("\n\n");
+    printf("%s--------------------------------------------------------------------------------------%s\n", C_DIM, C_RESET);
+    printf("%s============================ END PACKET %d ============================%s\n\n", C_ACCENT, packet_id, C_RESET);
 
 
 }
@@ -132,7 +133,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     
     if (handle == NULL) 
     {
-        fprintf(stderr, "Couldn't open device %s: %s\n", device->name, pcap_geterr(handle));
+        fprintf(stderr, "%sCouldn't open device %s:%s %s\n", C_ERR, device->name, C_RESET, pcap_geterr(handle));
         return;
     }
 
@@ -145,21 +146,21 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
         if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1)    // pcap_compile -> (pcap_t *p, struct bpf_program *fp, const char *str, int optimize, bpf_u_int32 netmask) // optimize : means whether to optimize the compiled code
         // this compiles the filter expression into BPF bytecode
         {
-            fprintf(stderr, "\nCouldn't parse filter %s: %s\n\n", filter_exp, pcap_geterr(handle));
+            fprintf(stderr, "\n%sCouldn't parse filter %s:%s %s\n\n", C_ERR, filter_exp, C_RESET, pcap_geterr(handle));
             pcap_close(handle);
             return;
         }
 
         if (pcap_setfilter(handle, &fp) == -1)   // pcap_setfilter -> (pcap_t *p, struct bpf_program *fp)
         {
-            fprintf(stderr, "\nCouldn't install filter %s: %s\n\n", filter_exp, pcap_geterr(handle));
+            fprintf(stderr, "\n%sCouldn't install filter %s:%s %s\n\n", C_ERR, filter_exp, C_RESET, pcap_geterr(handle));
             pcap_freecode(&fp);
             pcap_close(handle);
             return;
         }
 
         pcap_freecode(&fp); // Free the compiled filter
-        printf("Filter applied: %s\n", filter_exp);
+        printf("%sFilter applied:%s %s\n", C_OK, C_RESET, filter_exp);
         
     }
 
@@ -169,9 +170,9 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     signal(SIGINT, signal_handler);  // Register signal handler for SIGINT (Ctrl+C)
 
     printf("\n");
-    printf("========================================\n");
-    printf("  STARTING PACKET CAPTURE on %s\n", device->name);
-    printf("========================================\n\n\n");
+    printf("%s========================================%s\n", C_TITLE, C_RESET);
+    printf("%s  STARTING PACKET CAPTURE on %s%s\n", C_TITLE, device->name, C_RESET);
+    printf("%s========================================%s\n\n\n", C_TITLE, C_RESET);
 
 
     // Set stdin to non-blocking mode
@@ -180,8 +181,8 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     
     if (pcap_fd == -1)
     {
-        fprintf(stderr, "Error: This device doesn't support select()\n");
-        fprintf(stderr, "Falling back to Ctrl+C only mode...\n");
+        fprintf(stderr, "%sError:%s This device doesn't support select()\n", C_ERR, C_RESET);
+        fprintf(stderr, "%sFalling back to Ctrl+C only mode...%s\n", C_WARN, C_RESET);
         // Fallback to pcap_loop
         pcap_loop(handle, -1, my_callback, NULL);
     }
@@ -190,7 +191,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
         // Set pcap to non-blocking mode
         if (pcap_setnonblock(handle, 1, errbuf) == -1)
         {
-            fprintf(stderr, "Error setting non-blocking mode: %s\n", errbuf);
+            fprintf(stderr, "%sError setting non-blocking mode:%s %s\n", C_ERR, C_RESET, errbuf);
             pcap_close(handle);
             return;
         }
@@ -226,7 +227,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
                 int n = read(stdin_fd, &c, 1);
                 if (n == 0) // EOF detected (Ctrl+D)
                 {
-                    printf("\n\nCtrl+D detected. Exiting program...\n");
+                    printf("\n\n%sCtrl+D detected.%s Exiting program...\n", C_WARN, C_RESET);
                     stdin_eof = 1;
                     break;
                 }
@@ -245,7 +246,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
                 int packet_count = pcap_dispatch(handle, -1, my_callback, NULL);
                 if (packet_count == -1)
                 {
-                    fprintf(stderr, "Error reading packets: %s\n", pcap_geterr(handle));
+                    fprintf(stderr, "%sError reading packets:%s %s\n", C_ERR, C_RESET, pcap_geterr(handle));
                     break;
                 }
             }

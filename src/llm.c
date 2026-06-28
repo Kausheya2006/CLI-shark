@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+#include "utils.h"
 
 typedef struct {
     char *memory;
@@ -66,13 +67,13 @@ void refine_response(const char *raw_json) {
     char *start = strstr(raw_json, key);
     
     if (!start) {
-        printf("\n[CLI-SHARK] Failed to parse AI response. Raw data:\n%s\n", raw_json);
+        printf("\n%s[CLI-SHARK]%s Failed to parse AI response. Raw data:\n%s\n", C_ERR, C_RESET, raw_json);
         return;
     }
 
     start += strlen(key); // Move the pointer past the "content":" key
 
-    printf("\n================= CLI-SHARK AI ANALYSIS =================\n");
+    printf("\n%s================= CLI-SHARK AI ANALYSIS =================%s\n", C_TITLE, C_RESET);
 
     // Loop through the string character by character
     for (const char *p = start; *p != '\0'; p++) {
@@ -101,7 +102,7 @@ void refine_response(const char *raw_json) {
         }
     }
     
-    printf("\n=========================================================\n\n");
+    printf("\n%s=========================================================%s\n\n", C_TITLE, C_RESET);
 }
 
 // The main function to trigger the API
@@ -139,14 +140,14 @@ void send_to_llm_api(const char* raw_prompt) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
-        printf("\n[CLI-SHARK] Asking local Ollama...\n");
+        printf("\n%s[CLI-SHARK]%s Asking local Ollama...\n", C_ACCENT, C_RESET);
 
         // 4. Perform the request!
         res = curl_easy_perform(curl);
 
         if(res != CURLE_OK) {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            fprintf(stderr, "Is Ollama running? Try running 'ollama run llama3' in another terminal.\n");
+            fprintf(stderr, "%scurl_easy_perform() failed:%s %s\n", C_ERR, C_RESET, curl_easy_strerror(res));
+            fprintf(stderr, "%sIs Ollama running?%s Try running 'ollama run llama3' in another terminal.\n", C_WARN, C_RESET);
         } else {
             // Success! 
             refine_response(chunk.memory);

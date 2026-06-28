@@ -4,6 +4,7 @@
 #include "report.h"
 #include <signal.h>
 #include "report_utils.h"
+#include "utils.h"
 #include "sniper.h"
 
 // Signal handler to ignore Ctrl+C in menu
@@ -20,13 +21,13 @@ void work_with_device(pcap_if_t *device)
 
     while (1)
     {
-    printf("What's next? Choose from :\n");
-    printf("1. Start Sniffing (All Packets)\n");
-    printf("2. Start Sniffing (With Filters)\n");
-    printf("3. Inspect Last Session\n"); 
-    printf("4. Exit C-Shark\n");
-    printf("5. Go Back (Change Interface)\n"); 
-    printf("Enter your choice (1-5): ");
+    printf("%sWhat's next? Choose from:%s\n", C_TITLE, C_RESET);
+    printf("%s1.%s Start Sniffing (All Packets)\n", C_LABEL, C_RESET);
+    printf("%s2.%s Start Sniffing (With Filters)\n", C_LABEL, C_RESET);
+    printf("%s3.%s Inspect Last Session\n", C_LABEL, C_RESET);
+    printf("%s4.%s Exit C-Shark\n", C_LABEL, C_RESET);
+    printf("%s5.%s Go Back (Change Interface)\n", C_LABEL, C_RESET);
+    printf("%sEnter your choice (1-5):%s ", C_LABEL, C_RESET);
 
 
     int choice;
@@ -34,19 +35,19 @@ void work_with_device(pcap_if_t *device)
 
     if (choice_scan == EOF)  // Ctrl+D to exit
     {
-        printf("\nExiting...\n");
+        printf("\n%sExiting...%s\n", C_WARN, C_RESET);
         exit(0);
     }
 
     if (choice_scan != 1)  // Invalid input (not an integer)
     {
-        printf("Invalid input. Please enter a number.\n");
+        printf("%sInvalid input.%s Please enter a number.\n", C_ERR, C_RESET);
         // Clear the input buffer
         int c;
         while ((c = getchar()) != '\n' && c != EOF);
         if (c == EOF)  // Ctrl+D during cleanup
         {
-            printf("\nExiting...\n");
+            printf("\n%sExiting...%s\n", C_WARN, C_RESET);
             exit(0);
         }
         continue;
@@ -54,13 +55,13 @@ void work_with_device(pcap_if_t *device)
 
     if (choice == 1)
     {
-        printf("Starting to sniff all packets on interface: %s\n", device->name);
+        printf("%s[CLI-SHARK]%s Starting to sniff all packets on interface: %s\n", C_ACCENT, C_RESET, device->name);
         sniff_packets(device, NULL);
     }
     else if (choice == 2)
     {
         char filter_exp[256];
-        printf("Enter filter (BPF syntax, e.g., 'tcp port 80'): ");
+        printf("%sEnter filter%s (BPF syntax, e.g., 'tcp port 80'): ", C_LABEL, C_RESET);
         
         // Clear the input buffer before reading the filter string
         int c;
@@ -68,36 +69,36 @@ void work_with_device(pcap_if_t *device)
         
         if (c == EOF)  // Ctrl+D during buffer cleanup
         {
-            printf("\nExiting...\n");
+            printf("\n%sExiting...%s\n", C_WARN, C_RESET);
             exit(0);
         }
 
         if (scanf("%255[^\n]", filter_exp) == EOF)  // Ctrl+D while entering filter
         {
-            printf("\nExiting...\n");
+            printf("\n%sExiting...%s\n", C_WARN, C_RESET);
             exit(0);
         }
 
-        printf("Starting to sniff packets with filter '%s' on interface: %s\n", filter_exp, device->name);
+        printf("%s[CLI-SHARK]%s Starting to sniff packets with filter '%s' on interface: %s\n", C_ACCENT, C_RESET, filter_exp, device->name);
         sniff_packets(device, filter_exp);
         // After sniffing, the loop will repeat, showing the menu again.
     }
     else if (choice == 3)
     {
-        printf("Inspecting last session...\n");
+        printf("%s[CLI-SHARK]%s Inspecting last session...\n", C_ACCENT, C_RESET);
         int stored_packet_count = get_stored_packet_count();
         if (stored_packet_count == 0)
         {
-            printf("\nNo packets stored from the last session.\n\n");
+            printf("\n%sNo packets stored from the last session.%s\n\n", C_DIM, C_RESET);
             continue;
         }
 
        // Replace your old header with this one
        // Replace your header with this one
-        printf("Total packets stored in last session: %d\n", stored_packet_count);
-        printf("------------------------------------------------------------------------------------------------------------------------------------\n");
-        printf(" ID   | Timestamp         | Length | Source MAC        | Dest MAC          | Source IP       | Dest IP         | Src Port| Dst Port \n");
-        printf("------|-------------------|--------|-------------------|-------------------|-----------------|-----------------|---------|----------\n");
+        printf("%sTotal packets stored in last session:%s %d\n", C_LABEL, C_RESET, stored_packet_count);
+        printf("%s------------------------------------------------------------------------------------------------------------------------------------%s\n", C_DIM, C_RESET);
+        printf("%s ID   | Timestamp         | Length | Source MAC        | Dest MAC          | Source IP       | Dest IP         | Src Port| Dst Port %s\n", C_LABEL, C_RESET);
+        printf("%s------|-------------------|--------|-------------------|-------------------|-----------------|-----------------|---------|----------%s\n", C_DIM, C_RESET);
         for (int i = 0; i < stored_packet_count; i++)
         {
             stored_packet_t* stored_packet = get_stored_packet(i);
@@ -107,31 +108,31 @@ void work_with_device(pcap_if_t *device)
             }
         }
 
-        printf("-------------------------------------------------\n");
-        printf("End of stored packets summary.\n\n");
+        printf("%s-------------------------------------------------%s\n", C_DIM, C_RESET);
+        printf("%sEnd of stored packets summary.%s\n\n", C_DIM, C_RESET);
         
         // Loop to allow viewing multiple packets
         while (1)
         {
-            printf("Enter packet ID to view detailed info (or 0 to return to menu): ");
+            printf("%sEnter packet ID to view detailed info (or 0 to return to menu):%s ", C_LABEL, C_RESET);
             int choice2;
             int choice2_scan = scanf("%d", &choice2);
 
             if (choice2_scan == EOF)  // Ctrl+D to exit
             {
-                printf("\nExiting...\n");
+                printf("\n%sExiting...%s\n", C_WARN, C_RESET);
                 exit(0);
             }
 
             if (choice2_scan != 1)  // Invalid input
             {
-                printf("Invalid input. Please enter a number.\n");
+                printf("%sInvalid input.%s Please enter a number.\n", C_ERR, C_RESET);
                 // Clear the input buffer
                 int c;
                 while ((c = getchar()) != '\n' && c != EOF);
                 if (c == EOF)
                 {
-                    printf("\nExiting...\n");
+                    printf("\n%sExiting...%s\n", C_WARN, C_RESET);
                     exit(0);
                 }
                 continue;
@@ -139,7 +140,7 @@ void work_with_device(pcap_if_t *device)
 
             if (choice2 == 0)  // User wants to return to menu
             {
-                printf("Returning to menu...\n\n");
+                printf("%sReturning to menu...%s\n\n", C_DIM, C_RESET);
                 break;
             }
 
@@ -153,14 +154,14 @@ void work_with_device(pcap_if_t *device)
                     printf("\n");  // Add spacing after report
 
                     char key;
-                    printf("\n[CLI-SHARK] Actions: [?] AI Insight | [Any] Skip: ");
+                    printf("\n%s[CLI-SHARK]%s Actions: [?] AI Insight | [Any] Skip: ", C_ACCENT, C_RESET);
                     scanf(" %c", &key); 
 
                     if (key == '?') {
                         askLLM(selected_packet, choice2, total_header_len);
                     } 
 
-                    printf("\n[CLI-SHARK] Actions: [K] Kill Connection | [Any] Skip: ");
+                    printf("\n%s[CLI-SHARK]%s Actions: [K] Kill Connection | [Any] Skip: ", C_ACCENT, C_RESET);
                     scanf(" %c", &key); 
 
                     if (key == 'K' || key == 'k') {
@@ -179,7 +180,7 @@ void work_with_device(pcap_if_t *device)
                             uint32_t current_seq = ntohl(tcph->th_seq);
                             uint32_t current_ack = ntohl(tcph->th_ack);
 
-                            printf("\n[CLI-SHARK] Charging RST Sniper...\n");
+                            printf("\n%s[CLI-SHARK]%s Charging RST Sniper...\n", C_ACCENT, C_RESET);
                             
                             // Bullet 1: Hit the Destination (Pretending to be Source)
                             // We use the 'current_seq' because the destination is expecting that sequence number next.
@@ -189,34 +190,34 @@ void work_with_device(pcap_if_t *device)
                             // We swap the IPs/Ports, and use the 'current_ack' because the source is expecting that next.
                             fire_rst_packet(dst_ip, src_ip, dst_port, src_port, current_ack);
                             
-                            printf("[CLI-SHARK] Target connection neutralized.\n");
+                            printf("%s[CLI-SHARK]%s Target connection neutralized.\n", C_OK, C_RESET);
                         } else {
-                            printf("[CLI-SHARK] Error: Sniper only works on TCP connections.\n");
+                            printf("%s[CLI-SHARK]%s Error: Sniper only works on TCP connections.\n", C_ERR, C_RESET);
                         }
                     }
-                    printf("\n============================= End of Analysis =============================\n\n");
+                    printf("\n%s============================= End of Analysis =============================%s\n\n", C_TITLE, C_RESET);
                 }
             }
             else
             {
-                printf("Invalid packet ID. Please enter a number between 1 and %d (or 0 to return).\n", stored_packet_count);
+                printf("%sInvalid packet ID.%s Please enter a number between 1 and %d (or 0 to return).\n", C_ERR, C_RESET, stored_packet_count);
             }
         }
         
     }
     else if (choice == 4)
     {
-        printf("Exiting C-Shark. Goodbye!\n");
+        printf("%sExiting C-Shark.%s Goodbye!\n", C_WARN, C_RESET);
         exit(0);
     }
     else if (choice == 5)
     {
-        printf("Going back to interface selection...\n\n");
+        printf("%sGoing back to interface selection...%s\n\n", C_DIM, C_RESET);
         return; // Exit the loop to go back to interface selection
     }
     else
     {
-        printf("Invalid choice. Returning to main menu.\n");
+        printf("%sInvalid choice.%s Returning to main menu.\n", C_ERR, C_RESET);
     }
 }
 }
