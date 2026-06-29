@@ -124,18 +124,19 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     // pcap_t -> {snapshot, linktype, fd, errbuf, ...}
     // pcap_open_live -> (const char *device, int snaplen, int promisc, int to_ms, char *errbuf)  // to_ms = read timeout in milliseconds, snaplen = max bytes to capture per packet
 
+    if (handle == NULL) 
+    {
+        fprintf(stderr, "%sCouldn't open device %s:%s %s\n", C_ERR, device->name, C_RESET, errbuf);
+        return;
+    }
+
     int link_type = pcap_datalink(handle);
     if (link_type == DLT_NULL) {
         // This is macOS Loopback! Use a 4-byte offset
     } else if (link_type == DLT_EN10MB) {
         // This is standard Ethernet! Use a 14-byte offset
     }
-    
-    if (handle == NULL) 
-    {
-        fprintf(stderr, "%sCouldn't open device %s:%s %s\n", C_ERR, device->name, C_RESET, pcap_geterr(handle));
-        return;
-    }
+    set_session_linktype(link_type);
 
     if (filter_exp != NULL)
     {

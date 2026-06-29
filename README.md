@@ -5,26 +5,69 @@
 CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live network traffic across common Layer 2-7 protocols, with optional AI insights.
 
 ## Features
+
 - Live packet capture with optional BPF filters
+
 - Detailed per-packet analysis (Ethernet, IPv4/IPv6, ARP, TCP/UDP/ICMP)
+
 - Hex + ASCII payload dump with header highlighting
+
 - Protocol-specific summaries (HTTP/HTTPS/DNS)
+
 - AI insights for traffic behavior based on headers and payload
+
 - RST sniper to neutralize TCP connections (manual action)
+
 - Interactive CLI menu flow
 
 ## Project Structure
-- include/ - public headers
-- src/ - C source files
-- docs/ - documentation
 
+```
+.
+├── include/
+│   └── *.h
+├── src/
+│   ├── main.c  
+│   ├── report_utils.c  
+│   ├── report.c   # report generation and analysis
+│   ├── route.c
+│   ├── sniff.c    # for packet capturing
+│   ├── storage.c
+│   ├── utils.c
+│   ├── llm.c       # for AI insights
+│   └── sniper.c    # for RST sniper feature
+├── exports/   # saved packets in pcap format
+├── docs/
+├── assets/
+├── Makefile
+├── LICENSE
+└── README.md
+```
 
 ## Run Instructions
+
 ```sh
 make all  # to compile
 make run  # to run the program
 make clean # to remove generated files
 ```
+
+To get AI-insight, make sure you have an ollama model running locally at `http://localhost:11434` 
+
+```sh
+ollama serve # to start the ollama server
+```
+
+
+## Example usage :
+
+To test - 
+1. `http` : filter - `tcp port 80`  simulate - `curl http://example.com`
+2. `https` : filter - `tcp port 443`  simulate - `curl https://example.com`
+3. `dns` : filter - `udp port 53`  simulate - `nslookup example.com`
+4. `arp` : filter - `arp`  simulate - `arping <some-ip-in-network>`
+5. `tcp` : filter - `tcp`  simulate - `telnet example.com 80`
+6. `udp` : filter - `udp`  simulate - `nslookup example.com`
 
 ## Docs
 - Version notes: [docs/versions.md](docs/versions.md)
@@ -32,7 +75,7 @@ make clean # to remove generated files
 ## License
 See [LICENSE](LICENSE).
 
-## Assumptions
+## Usage Notes
 
 1. In case of `Start Sniffing (With Filters)` option, use BPF syntax to specify the filters. Few examples include :
     ```
@@ -48,26 +91,22 @@ See [LICENSE](LICENSE).
     - Wont do anything if already at main menu or interface selection page.
 
 4. Supported protocols for inspection : 
-    - Layer 3 - IPv4, IPv6, ARP
+    ```yaml
+    - Layer 3 : IPv4, IPv6, ARP
     - Layer 4 :
         - ICMP, TCP, UDP for IPv4
         - ICMPv6, TCP, UDP for IPv6
     - Layer 7 :
         - HTTP, HTTPS, DNS
+    ```
 
-5. Supported Flags in TCP packets : NS, CWR, ECE, URG, ACK, PSH, RST, SYN, FIN
+5. Supported Flags in TCP packets : 
+    ```yaml
+    NS, CWR, ECE, URG, ACK, PSH, RST, SYN, FIN
+    ```
 
-6. **Issue :** If you press `ctrl+c` during inspect last session while providing input, it wont take you to main menu. You need to press `0` to return to main menu.
-    - This is because I am assuming the document want us to handle `ctrl+c` only during packet capturing, to return it back to main menu.
+## Issues
 
-7. I am not using persistant storage to save captured packets. I am storing them in an array.
+- If you press `ctrl+c` during inspect last session while providing input, it wont take you to main menu. You need to press `0` to return to main menu.
 
-## Example usage :
-
-To test - 
-1. `http` : filter - `tcp port 80`  simulate - `curl http://example.com`
-2. `https` : filter - `tcp port 443`  simulate - `curl https://example.com`
-3. `dns` : filter - `udp port 53`  simulate - `nslookup example.com`
-4. `arp` : filter - `arp`  simulate - `arping <some-ip-in-network>`
-5. `tcp` : filter - `tcp`  simulate - `telnet example.com 80`
-6. `udp` : filter - `udp`  simulate - `nslookup example.com`
+- I am not using persistant storage to save captured packets. I am storing them in an array.

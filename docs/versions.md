@@ -10,3 +10,6 @@
 - v0.4: 
     - Improved readability and coloring
     - Refactored code
+- v0.5:
+    - Added option to export captured packets in pcap format
+    - Added option to view saved pcap files 
