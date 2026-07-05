@@ -1,8 +1,14 @@
 # CLI-Shark
 
-<image src='assets/image1.jpeg' width=600>
+
+![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
+![GNU Make](https://img.shields.io/badge/GNU%20Make-1A1A1A?style=for-the-badge&logo=gnu-make&logoColor=white)
+![libpcap](https://img.shields.io/badge/libpcap-36454F?style=for-the-badge)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
 
 CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live network traffic across common Layer 2-7 protocols, with optional AI insights.
+
+<image src='assets/image1.jpeg' width=600>
 
 ## Features
 
