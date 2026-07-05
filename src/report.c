@@ -127,3 +127,98 @@ int generate_report(stored_packet_t *stored_packet, int packet_id) {
 
     return total_header_len;
 }
+
+void calculate_session_stats(session_stats_t *stats) {
+    memset(stats, 0, sizeof(session_stats_t));
+    
+    int total_packets = get_stored_packet_count();
+    if (total_packets == 0) return;
+    
+    stats->total_packets = total_packets;
+    struct timeval first_ts = {0}, last_ts = {0};
+    
+    for (int i = 0; i < total_packets; i++) {
+        stored_packet_t *stored = get_stored_packet(i);
+        if (!stored) continue;
+        
+        stats->total_bytes += stored->header.len;
+        
+        if (i == 0) first_ts = stored->header.ts;
+        last_ts = stored->header.ts;
+        
+        const u_char *packet = stored->data;
+        if (packet[12] == 0x08 && packet[13] == 0x00) { // IPv4
+            uint32_t src_ip, dst_ip;
+            memcpy(&src_ip, &packet[26], 4);
+            memcpy(&dst_ip, &packet[30], 4);
+            
+            // Track Source (Bytes Sent)
+            int found = 0;
+            for (int j = 0; j < stats->top_talker_count; j++) {
+                if (stats->top_talkers[j].ip == src_ip) {
+                    stats->top_talkers[j].bytes_sent += stored->header.len;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found && stats->top_talker_count < 10) {
+                stats->top_talkers[stats->top_talker_count].ip = src_ip;
+                stats->top_talkers[stats->top_talker_count].bytes_sent = stored->header.len;
+                stats->top_talker_count++;
+            }
+            
+            // Track Destination (Bytes Recv)
+            found = 0;
+            for (int j = 0; j < stats->top_talker_count; j++) {
+                if (stats->top_talkers[j].ip == dst_ip) {
+                    stats->top_talkers[j].bytes_recv += stored->header.len;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found && stats->top_talker_count < 10) {
+                stats->top_talkers[stats->top_talker_count].ip = dst_ip;
+                stats->top_talkers[stats->top_talker_count].bytes_recv = stored->header.len;
+                stats->top_talker_count++;
+            }
+            
+            u_char protocol = packet[23];
+            if (protocol == 6) stats->count_tcp++;
+            else if (protocol == 17) stats->count_udp++;
+            else if (protocol == 1) stats->count_icmp++;
+            else stats->count_other++;
+            
+            if (protocol == 6 || protocol == 17) {
+                const u_char *transport = packet + 14 + ((packet[14] & 0x0F) * 4);
+                uint16_t sp = ntohs(*(uint16_t*)transport);
+                uint16_t dp = ntohs(*(uint16_t*)(transport + 2));
+                
+                if (sp == 80 || dp == 80) stats->count_http++;
+                if (sp == 443 || dp == 443) stats->count_https++;
+                if (sp == 53 || dp == 53) stats->count_dns++;
+            }
+        } else if (packet[12] == 0x08 && packet[13] == 0x06) {
+            stats->count_other++; // ARP
+        } else {
+            stats->count_other++;
+        }
+    }
+    
+    double start_sec = first_ts.tv_sec + first_ts.tv_usec / 1000000.0;
+    double end_sec = last_ts.tv_sec + last_ts.tv_usec / 1000000.0;
+    stats->duration_seconds = end_sec - start_sec;
+    if (stats->duration_seconds <= 0.0) stats->duration_seconds = 1.0;
+    
+    // Sort Top Talkers by Total Volume (Sent + Recv)
+    for (int i = 0; i < stats->top_talker_count - 1; i++) {
+        for (int j = 0; j < stats->top_talker_count - i - 1; j++) {
+            uint64_t v1 = stats->top_talkers[j].bytes_sent + stats->top_talkers[j].bytes_recv;
+            uint64_t v2 = stats->top_talkers[j+1].bytes_sent + stats->top_talkers[j+1].bytes_recv;
+            if (v1 < v2) {
+                ip_stat_t temp = stats->top_talkers[j];
+                stats->top_talkers[j] = stats->top_talkers[j+1];
+                stats->top_talkers[j+1] = temp;
+            }
+        }
+    }
+}

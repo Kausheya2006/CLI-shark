@@ -20,4 +20,9 @@
 #include <unistd.h>
 
 #include <signal.h>
+#include "ui.h"
+
+// Redirect all printfs to our ncurses UI log window
+#define printf ui_printf
+
 #endif

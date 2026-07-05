@@ -170,10 +170,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     stdin_eof = 0; // Reset EOF flag
     signal(SIGINT, signal_handler);  // Register signal handler for SIGINT (Ctrl+C)
 
-    printf("\n");
-    printf("%s========================================%s\n", C_TITLE, C_RESET);
-    printf("%s  STARTING PACKET CAPTURE on %s%s\n", C_TITLE, device->name, C_RESET);
-    printf("%s========================================%s\n\n\n", C_TITLE, C_RESET);
+    ui_sniff_start(device->name, filter_exp);
 
 
     // Set stdin to non-blocking mode
@@ -262,14 +259,11 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     pcap_close(handle);
     g_pcap_handle = NULL; // Clear the global pcap handle
 
-    if (capture_interrupted)
+    ui_sniff_end();
+    
+    if (stdin_eof)
     {
-        printf("\nPacket capture stopped. Returning to menu...\n\n");
-    }
-    else if (stdin_eof)
-    {
-        // Exit the entire program
-        printf("Goodbye!\n");
+        ui_cleanup();
         exit(0);
     }
 }
