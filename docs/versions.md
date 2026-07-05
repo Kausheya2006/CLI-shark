@@ -1,15 +1,15 @@
 # Version Notes
 
-- v0.1: 
-    - Base repo
+- v1.0: 
+    - Refined packet reporting and CLI flow
     - Added sniff, report and filter options
-- v0.2: 
-    - Added AI insights
-- v0.3: 
-    - Added RST sniper
-- v0.4: 
+- v1.1: 
+    - Added AI insights feature
+- v1.2: 
+    - Added sniper feature to terminate connections
+- v1.3: 
     - Improved readability and coloring
     - Refactored code
-- v0.5:
+- v1.4:
     - Added option to export captured packets in pcap format
-    - Added option to view saved pcap files 
+    - Added option to view saved pcap files
