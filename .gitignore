@@ -5,4 +5,5 @@ cshark
 
 *.md
 !README.md
-!docs/
+!docs/versions.md
+!docs/Technical_Documentation.md
