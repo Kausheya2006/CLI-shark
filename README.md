@@ -100,7 +100,7 @@ To test -
 
 ## Documentation
 
-- **Architecture & Internals**: For a deep dive into the packet lifecycle, core systems, and data flow, refer to the [Technical Documentation](TECHNICAL_DOCUMENTATION.md).
+- **Architecture & Internals**: For a deep dive into the packet lifecycle, core systems, and data flow, refer to the [Technical Documentation](docs/Technical_Documentation.md).
 - **Changelog**: Release notes and version history can be found in [Versions](docs/versions.md).
 
 ## License
