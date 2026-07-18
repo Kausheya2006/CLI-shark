@@ -2,3 +2,7 @@
 cshark
 *.pcap
 .DS_Store
+
+*.md
+!README.md
+!docs/

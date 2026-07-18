@@ -64,10 +64,43 @@ static void inspect_session(const char *label)
                 stored_packet_t* selected_packet = get_stored_packet(choice2);
                 if (selected_packet != NULL)
                 {
-                    char details[1024];
-                    snprintf(details, sizeof(details), "Detailed packet view for packet %d\nFeature to be completed (requires rewriting report.c to return strings)", choice2 + 1);
-                    
-                    ui_show_packet_details(details);
+                    generate_report_string(selected_packet, choice2 + 1);
+
+                    while (1) {
+                        char *details = report_get();
+                        int action = 0;
+                        if (details != NULL)
+                        {
+                            action = ui_show_packet_details(details);
+                            free(details);
+                        }
+
+                        if (action == '?') {
+                            askLLM(selected_packet, choice2 + 1);
+                            continue;
+                        } else if (action == 'k' || action == 'K') {
+                            struct ip *iph = (struct ip *)(selected_packet->data + 14); // Assuming standard 14-byte Ethernet header
+                            if (iph->ip_p == IPPROTO_TCP) {
+                                struct tcphdr *tcph = (struct tcphdr *)(selected_packet->data + 14 + (iph->ip_hl * 4));
+                                uint32_t src_ip = iph->ip_src.s_addr;
+                                uint32_t dst_ip = iph->ip_dst.s_addr;
+                                uint16_t src_port = ntohs(tcph->th_sport);
+                                uint16_t dst_port = ntohs(tcph->th_dport);
+                                uint32_t current_seq = ntohl(tcph->th_seq);
+                                uint32_t current_ack = ntohl(tcph->th_ack);
+                                
+                                report_printf("\n%s[CLI-SHARK]%s Charging RST Sniper...\n", C_ACCENT, C_RESET);
+                                fire_rst_packet(src_ip, dst_ip, src_port, dst_port, current_seq);
+                                fire_rst_packet(dst_ip, src_ip, dst_port, src_port, current_ack);
+                                report_printf("%s[CLI-SHARK]%s Target connection neutralized.\n", C_OK, C_RESET);
+                            } else {
+                                report_printf("\n%s[CLI-SHARK]%s Error: Sniper only works on TCP connections.\n", C_ERR, C_RESET);
+                            }
+                            continue;
+                        }
+                        
+                        break;
+                    }
                 }
             }
         } else if (ch == 1) {

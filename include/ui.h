@@ -53,6 +53,6 @@ struct session_stats_t; // Forward declare if needed, but it's better to just in
 void ui_show_dashboard(session_stats_t *stats);
 
 // Render the detailed report of a packet in a scrollable window
-void ui_show_packet_details(const char *details_text);
+int ui_show_packet_details(const char *details_text);
 
 #endif // UI_H

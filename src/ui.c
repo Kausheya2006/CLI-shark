@@ -19,6 +19,10 @@ void ui_init() {
         init_pair(COLOR_SUCCESS, COLOR_GREEN, COLOR_BLACK);
         init_pair(COLOR_DIM, COLOR_WHITE, COLOR_BLACK);
         init_pair(COLOR_SELECTED, COLOR_BLACK, COLOR_WHITE);
+        
+        for (int i = 0; i <= 7; i++) {
+            init_pair(10 + i, i, COLOR_BLACK);
+        }
     }
 }
 
@@ -87,7 +91,7 @@ int ui_select_menu(const char *title, const char **options, int option_count) {
             selected++;
         } else if (ch == '\n' || ch == KEY_ENTER) {
             return selected;
-        } else if (ch == 'q' || ch == 'Q') {
+        } else if (ch == 'q' || ch == 'Q' || ch == ERR || ch == 3) {
             return -1;
         }
     }
@@ -202,11 +206,52 @@ int ui_inspect_session_menu(int total_packets, summary_fetcher_t fetcher) {
         if (ch == KEY_UP && selected > 0) selected--;
         else if (ch == KEY_DOWN && selected < total_packets - 1) selected++;
         else if (ch == '\n' || ch == KEY_ENTER) return selected;
-        else if (ch == 'q' || ch == 'Q') return -1;
+        else if (ch == 'q' || ch == 'Q' || ch == ERR || ch == 3) return -1;
     }
 }
 
-void ui_show_packet_details(const char *details_text) {
+static void waddstr_ansi(WINDOW *win, const char *str) {
+    int bold = 0, dim = 0;
+    int fg = 7; // white
+    wattrset(win, COLOR_PAIR(10 + fg));
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == '\x1b' && str[i+1] == '[') {
+            i += 2;
+            int val = 0;
+            while (str[i] != '\0' && str[i] != 'm') {
+                if (str[i] >= '0' && str[i] <= '9') {
+                    val = val * 10 + (str[i] - '0');
+                } else if (str[i] == ';') {
+                    if (val == 0) { bold = 0; dim = 0; fg = 7; }
+                    else if (val == 1) bold = 1;
+                    else if (val == 2) dim = 1;
+                    else if (val >= 30 && val <= 37) fg = val - 30;
+                    val = 0;
+                }
+                i++;
+            }
+            if (str[i] == 'm') {
+                if (val == 0) { bold = 0; dim = 0; fg = 7; }
+                else if (val == 1) bold = 1;
+                else if (val == 2) dim = 1;
+                else if (val >= 30 && val <= 37) fg = val - 30;
+                
+                int attr = COLOR_PAIR(10 + fg);
+                if (bold) attr |= A_BOLD;
+                if (dim) attr |= A_DIM;
+                wattrset(win, attr);
+            } else if (str[i] == '\0') {
+                break;
+            }
+            continue;
+        }
+        waddch(win, (unsigned char)str[i]);
+    }
+    wattrset(win, A_NORMAL);
+}
+
+int ui_show_packet_details(const char *details_text) {
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
     clear();
@@ -219,18 +264,14 @@ void ui_show_packet_details(const char *details_text) {
     mvprintw(2, 2, "UP/DOWN: Scroll | 'q' or ENTER: Go Back | 'k': Snipe | '?': AI Insight");
     attroff(COLOR_PAIR(COLOR_DIM));
     
-    WINDOW *pad = newpad(2000, 200);
+    refresh(); // FLUSH stdscr so the first getch() doesn't overwrite the pad with blank spaces!
+    
+    WINDOW *pad = newpad(2000, max_x - 3);
     current_log_win = pad;
     
-    int y = 0;
     if (details_text) {
-        char *text_copy = strdup(details_text);
-        char *line = strtok(text_copy, "\n");
-        while(line != NULL) {
-            mvwprintw(pad, y++, 0, "%s", line);
-            line = strtok(NULL, "\n");
-        }
-        free(text_copy);
+        wmove(pad, 0, 0);
+        waddstr_ansi(pad, details_text);
     }
     
     int pad_y = 0;
@@ -240,11 +281,10 @@ void ui_show_packet_details(const char *details_text) {
         ch = getch();
         if (ch == KEY_DOWN && pad_y < 1900) pad_y++; // simplify scrolling bound
         else if (ch == KEY_UP && pad_y > 0) pad_y--;
-        else if (ch == 'q' || ch == 'Q' || ch == '\n' || ch == KEY_ENTER || ch == 'k' || ch == 'K' || ch == '?') {
+        else if (ch == 'q' || ch == 'Q' || ch == '\n' || ch == KEY_ENTER || ch == 'k' || ch == 'K' || ch == '?' || ch == ERR || ch == 3) {
             delwin(pad);
             current_log_win = NULL;
-            ungetch(ch); 
-            return;
+            return ch;
         }
     }
 }
@@ -314,7 +354,7 @@ void ui_show_dashboard(session_stats_t *stats) {
     refresh();
     while (1) {
         int ch = getch();
-        if (ch == 'q' || ch == 'Q' || ch == '\n' || ch == KEY_ENTER) {
+        if (ch == 'q' || ch == 'Q' || ch == '\n' || ch == KEY_ENTER || ch == ERR || ch == 3) {
             break;
         }
     }

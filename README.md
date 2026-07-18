@@ -8,7 +8,16 @@
 
 CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live network traffic across common Layer 2-7 protocols, with optional AI insights.
 
-<image src='assets/image1.jpeg' width=600>
+<table>
+  <tr>
+    <td><img src="assets/menu.jpeg" alt="Menu Interface" width="400"/></td>
+    <td><img src="assets/dashboard.jpeg" alt="Session Dashboard" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="assets/header.jpeg" alt="Packet Header Details" width="400"/></td>
+    <td><img src="assets/payload.jpeg" alt="Hex and ASCII Payload Dump" width="400"/></td>
+  </tr>
+</table>
 
 ## Features
 
@@ -54,6 +63,16 @@ CLI-Shark is a terminal-based packet sniffer and analyzer for inspecting live ne
 └── README.md
 ```
 
+## Prerequisites
+
+Ensure the following dependencies are installed before compiling:
+- **C Compiler** (e.g., `gcc` or `clang`)
+- **GNU Make**
+- **libpcap** (for packet capturing)
+- **libcurl** (for API requests to the LLM)
+- **ncurses** (for the interactive terminal UI)
+- **Ollama** (optional, for AI-powered packet analysis)
+
 ## Run Instructions
 
 ```sh
@@ -79,11 +98,14 @@ To test -
 5. `tcp` : filter - `tcp`  simulate - `telnet example.com 80`
 6. `udp` : filter - `udp`  simulate - `nslookup example.com`
 
-## Docs
-- Version notes: [docs/versions.md](docs/versions.md)
+## Documentation
+
+- **Architecture & Internals**: For a deep dive into the packet lifecycle, core systems, and data flow, refer to the [Technical Documentation](TECHNICAL_DOCUMENTATION.md).
+- **Changelog**: Release notes and version history can be found in [Versions](docs/versions.md).
 
 ## License
-See [LICENSE](LICENSE).
+
+This project is open-source and available under the terms of the [LICENSE](LICENSE).
 
 ## Usage Notes
 

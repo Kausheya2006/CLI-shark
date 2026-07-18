@@ -13,3 +13,11 @@
 - v1.4:
     - Added option to export captured packets in pcap format
     - Added option to view saved pcap files
+- v1.5:
+    - Switched to nurses ui
+
+- v1.6:
+    - introduced session-dashboard
+
+- v1.7:
+    - ncurses bug fixes

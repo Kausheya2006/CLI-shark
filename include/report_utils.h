@@ -21,9 +21,12 @@ void generate_ipv4_report(const u_char *, int *, int *);
 
 void generate_arp_report(const u_char *);
 
-
 void generate_ipv6_report(const u_char *, int *);
 
-void askLLM(stored_packet_t*, int, int);
+void askLLM(stored_packet_t*, int);
+
+void report_printf(const char *fmt, ...);
+char *report_get(void);
+void report_clear(void);
 
 #endif 

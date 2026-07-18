@@ -4,6 +4,10 @@
 #include "utils.h"
 #include "report_utils.h"
 
+#undef printf
+#define printf report_printf
+
+
 ///////// LLM GENERATED CODE /////////
 void get_summary(stored_packet_t *stored_packet, int i)
 {
@@ -221,4 +225,10 @@ void calculate_session_stats(session_stats_t *stats) {
             }
         }
     }
+}
+
+char *generate_report_string(stored_packet_t *stored_packet, int packet_id) {
+    report_clear();
+    generate_report(stored_packet, packet_id);
+    return report_get();
 }

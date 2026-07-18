@@ -3,6 +3,11 @@
 #include <string.h>
 #include <curl/curl.h>
 #include "utils.h"
+#include "report_utils.h"
+
+#undef printf
+#define printf report_printf
+#define putchar(c) report_printf("%c", c)
 
 typedef struct {
     char *memory;
@@ -106,6 +111,16 @@ void refine_response(const char *raw_json) {
 }
 
 // The main function to trigger the API
+/*
+1. escape_for_json() : Safely escapes quotes, backslashes, and control characters in the prompt :
+    changes Hello "World" to Hello \"World\"
+
+2. curl_slist_append() : Adds the Content-Type header to the request
+3. curl_easy_setopt() : Sets the URL, headers, and POST data for the request
+4. curl_easy_perform() : Sends the request and waits for the response
+5. WriteMemoryCallback() : Saves the response into a dynamically allocated buffer
+6. refine_response() : Extracts the AI's message from the JSON and prints it to the console, handling escaped characters like \n and \t
+*/
 void send_to_llm_api(const char* raw_prompt) {
     CURL *curl;
     CURLcode res;
@@ -146,8 +161,8 @@ void send_to_llm_api(const char* raw_prompt) {
         res = curl_easy_perform(curl);
 
         if(res != CURLE_OK) {
-            fprintf(stderr, "%scurl_easy_perform() failed:%s %s\n", C_ERR, C_RESET, curl_easy_strerror(res));
-            fprintf(stderr, "%sIs Ollama running?%s Try running 'ollama run llama3' in another terminal.\n", C_WARN, C_RESET);
+            report_printf("%scurl_easy_perform() failed:%s %s\n", C_ERR, C_RESET, curl_easy_strerror(res));
+            report_printf("%sIs Ollama running?%s Try running 'ollama run llama3' in another terminal.\n", C_WARN, C_RESET);
         } else {
             // Success! 
             refine_response(chunk.memory);

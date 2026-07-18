@@ -34,4 +34,9 @@ void get_summary(stored_packet_t *, int);
 int generate_report(stored_packet_t *, int);
 void calculate_session_stats(session_stats_t *stats);
 
+void report_printf(const char *fmt, ...);
+void report_clear(void);
+char *report_get(void);
+char *generate_report_string(stored_packet_t *stored_packet, int packet_id);
+
 #endif

@@ -12,7 +12,7 @@ int main()
     pcap_if_t *alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
 
-    if (pcap_findalldevs(&alldevs, errbuf) == -1) 
+    if (pcap_findalldevs(&alldevs, errbuf) == -1)   // alldevs points to head of the linked list of devices
     {
         ui_cleanup();
         fprintf(stderr, "\nError in pcap_findalldevs: %s\n", errbuf);

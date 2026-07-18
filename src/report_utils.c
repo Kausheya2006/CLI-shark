@@ -4,6 +4,32 @@
 #include <ctype.h>
 #include "report.h"
 #include "llm.h"
+#include <stdarg.h>
+
+static char report_buf[65536];
+static size_t report_buf_len = 0;
+
+void report_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int needed = vsnprintf(report_buf + report_buf_len, sizeof(report_buf) - report_buf_len, fmt, args);
+    va_end(args);
+    if (needed > 0 && report_buf_len + needed < sizeof(report_buf)) {
+        report_buf_len += needed;
+    }
+}
+
+void report_clear(void) {
+    report_buf_len = 0;
+    report_buf[0] = '\0';
+}
+
+char *report_get(void) {
+    return strdup(report_buf);
+}
+
+#undef printf
+#define printf report_printf
 
 void print_hex_dump(const u_char *data, int total_len, int header_len) {
     const int bytes_per_line = 16;
@@ -154,37 +180,21 @@ void generate_ipv6_report(const u_char *packet, int *next_protocol) {
     printf("  %sDestination IP:%s   %s\n", C_LABEL, C_RESET, dst_ip_buf);
 }
 
-void askLLM(stored_packet_t *packet, int packet_id, int total_header_len){
+void askLLM(stored_packet_t *packet, int packet_id){
+    report_clear();
+    int total_header_len = generate_report(packet, packet_id);
+    char *report_str = report_get();
 
-    FILE *tmp = tmpfile();
-    if (!tmp) return;
-
-    int og_stdout = dup(fileno(stdout));
-
-    // redirect stdout to tmp file
-    dup2(fileno(tmp), fileno(stdout));
-    generate_report(packet, packet_id);
-    fflush(stdout);
-    dup2(og_stdout, fileno(stdout));
-    close(og_stdout);
-
-    fseek(tmp, 0, SEEK_SET); // beginning
-
-    char line[256];
     char header_content[4096] = {0};
-
-    // everything before full packet data
-    while (fgets(line, sizeof(line), tmp))
-    {
-        if (strstr(line, "========================= In-Depth Packet Analysis ========================"))
-            continue;
-
-        if (strstr(line, "--- Full Packet Data (Headers in Blue) ---"))
-            break;
-        
-        strncat(header_content, line, sizeof(header_content) - strlen(header_content) - 1);
+    char *full_data_marker = strstr(report_str, "--- Full Packet Data (Headers in Blue) ---");
+    if (full_data_marker) {
+        size_t len = full_data_marker - report_str;
+        if (len > sizeof(header_content) - 1) len = sizeof(header_content) - 1;
+        strncpy(header_content, report_str, len);
+    } else {
+        strncpy(header_content, report_str, sizeof(header_content) - 1);
     }
-    fclose(tmp);
+    free(report_str);
 
     int caplen = packet->header.caplen;
     
@@ -192,13 +202,12 @@ void askLLM(stored_packet_t *packet, int packet_id, int total_header_len){
     strip_ansi_codes(header_content, clean_header, sizeof(clean_header));
 
     char *llmprompt = calloc(1, strlen(clean_header) + caplen + 512);
-    if (!llmprompt)     return;
+    if (!llmprompt) return;
 
     snprintf(llmprompt, strlen(clean_header) + 512, 
     "You are an expert network analyst. Look at these headers and the extracted ASCII payload. What is this traffic doing? Keep it under 3 sentences.\n\n"
     "HEADERS:\n%s\n"
     "ASCII PAYLOAD:\n", clean_header);
-
 
     // concatenate body
     int curr_idx = strlen(llmprompt);
@@ -213,9 +222,6 @@ void askLLM(stored_packet_t *packet, int packet_id, int total_header_len){
     }
     llmprompt[curr_idx] = '\0';
 
-    //printf("\n\n Prompt : %s\n\n", llmprompt);
-
     send_to_llm_api(llmprompt);
-    //printf("%s", llmprompt);
     free(llmprompt);
 }

@@ -195,12 +195,12 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
         }
 
         // Main capture loop using select()
-        while (!capture_interrupted && !stdin_eof)
+        while (!capture_interrupted && !stdin_eof)   // ctrl+c or ctrl+d will break the loop
         {
             fd_set readfds;
-            FD_ZERO(&readfds);
-            FD_SET(stdin_fd, &readfds);
-            FD_SET(pcap_fd, &readfds);
+            FD_ZERO(&readfds);   // empty the bitmap of file descriptors
+            FD_SET(stdin_fd, &readfds);  // this is for detecting Ctrl+D (EOF) from user input
+            FD_SET(pcap_fd, &readfds);   // this is for detecting incoming packets from pcap
 
             int max_fd = (stdin_fd > pcap_fd) ? stdin_fd : pcap_fd;
             
@@ -208,7 +208,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
             timeout.tv_sec = 0;
             timeout.tv_usec = 100000; // 100ms timeout
 
-            int ret = select(max_fd + 1, &readfds, NULL, NULL, &timeout);
+            int ret = select(max_fd + 1, &readfds, NULL, NULL, &timeout);  // monitoring these file descriptors 
 
             if (ret == -1)
             {
@@ -241,7 +241,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
             if (FD_ISSET(pcap_fd, &readfds))
             {
                 // Process available packets
-                int packet_count = pcap_dispatch(handle, -1, my_callback, NULL);
+                int packet_count = pcap_dispatch(handle, -1, my_callback, NULL);  // process all available packets by calling my_callback for each packet
                 if (packet_count == -1)
                 {
                     fprintf(stderr, "%sError reading packets:%s %s\n", C_ERR, C_RESET, pcap_geterr(handle));
@@ -254,7 +254,7 @@ void sniff_packets(pcap_if_t *device, const char *filter_exp)
     // Restore menu signal handler after capture (not default which would terminate)
     // We'll let the calling function (work_with_device) handle reinstalling its own handler
     extern void ignore_sigint_menu(int);
-    signal(SIGINT, ignore_sigint_menu);
+    signal(SIGINT, ignore_sigint_menu);   // Restore the menu signal handler to ignore Ctrl+C in the menu
 
     pcap_close(handle);
     g_pcap_handle = NULL; // Clear the global pcap handle
